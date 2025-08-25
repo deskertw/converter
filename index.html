@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>Base64/Base96 轉換工具</title>
+  <style>
+    body { font-family: sans-serif; padding: 2em; background: #f9f9f9; }
+    input, textarea, button { font-size: 1em; margin: 0.5em 0; width: 100%; }
+    .result { background: #eee; padding: 1em; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <h2>Base64/Base96 自動轉換器</h2>
+  <textarea id="input" rows="4" placeholder="請輸入字串..."></textarea>
+  <button onclick="convert()">轉換</button>
+  <div class="result" id="output"></div>
+
+  <script>
+    const base96Chars = [...Array(96)].map((_, i) => String.fromCharCode(i + 32));
+    const base96Map = Object.fromEntries(base96Chars.map((c, i) => [c, i]));
+
+    function base64ToBase96(b64) {
+      const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      let num = BigInt('0x' + [...bytes].map(b => b.toString(16).padStart(2, '0')).join(''));
+      let result = '';
+      while (num > 0n) {
+        result = base96Chars[Number(num % 96n)] + result;
+        num /= 96n;
+      }
+      return result;
+    }
+
+    function base96ToBase64(b96) {
+      let num = 0n;
+      for (const c of b96) {
+        num = num * 96n + BigInt(base96Map[c]);
+      }
+      const hex = num.toString(16).padStart(num.toString(16).length + num.toString(16).length % 2, '0');
+      const bytes = hex.match(/.{2}/g).map(h => String.fromCharCode(parseInt(h, 16))).join('');
+      return btoa(bytes);
+    }
+
+    function convert() {
+      const input = document.getElementById('input').value.trim();
+      let output = '';
+      try {
+        if (input.startsWith('X')) {
+          output = base64ToBase96(input.slice(1));
+        } else {
+          output = 'X' + base96ToBase64(input);
+        }
+      } catch (e) {
+        output = '⚠️ 轉換失敗：' + e.message;
+      }
+      document.getElementById('output').textContent = output;
+    }
+  </script>
+</body>
+</html>
