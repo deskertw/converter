@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>mnemo_base_tools.html — BIP39 + Base64/Base95 工具集</title>
+  <title>mnemo_base_tools_b94.html — BIP39 + Base64/Base94 工具集</title>
   <style>
     :root {
       --bg: #0b0f14;
@@ -44,12 +44,12 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>mnemo_base_tools.html <span class="pill">offline • client‑side</span></h1>
-    <div class="sub">整合兩個工具：BIP39 助記詞編碼/解碼（使用 A–H 前綴規則）與 Base64/Base95 轉換器。</div>
+    <h1>mnemo_base_tools_b94.html <span class="pill">offline • client‑side</span></h1>
+    <div class="sub">整合兩個工具：BIP39 助記詞編碼/解碼（A–H 前綴規則）與 Base64/Base94 轉換器（無空白字元、可自動去除輸入空白）。</div>
 
     <div class="tabs">
       <button class="tab-btn active" data-tab="bip39">BIP39 編碼/解碼</button>
-      <button class="tab-btn" data-tab="base95">Base64/Base95 轉換</button>
+      <button class="tab-btn" data-tab="b64txt">文字/Base64 轉換</button>
     </div>
 
     <!-- BIP39 -->
@@ -88,7 +88,7 @@
         </div>
         <div id="encode-msg" class="hint" style="margin-top:8px;"></div>
         <div id="encode-out" class="out" style="margin-top:10px;"></div>
-<div class="btns" style="margin-top:8px;"><button id="btn-copy-enc" class="secondary">複製結果</button></div>
+        <div class="btns" style="margin-top:8px;"><button id="btn-copy-enc" class="secondary">複製結果</button></div>
       </div>
 
       <div class="card">
@@ -109,32 +109,36 @@
         </div>
         <div id="decode-msg" class="hint" style="margin-top:8px;"></div>
         <div id="decode-out" class="out" style="margin-top:10px;"></div>
-<div class="btns" style="margin-top:8px;"><button id="btn-copy-dec" class="secondary">複製助記詞</button></div>
+        <div class="btns" style="margin-top:8px;"><button id="btn-copy-dec" class="secondary">複製助記詞</button></div>
       </div>
     </section>
 
-    <!-- Base95 -->
-    <section id="tab-base95" class="hidden">
-      <div class="card">
-        <h2>Base64/Base95 自動轉換器</h2>
-        <div class="row">
-          <div>
-            <label>輸入</label>
-            <textarea id="b95-input" rows="4" placeholder="請輸入字串..."></textarea>
-            <div class="hint">若字串以 X 開頭，會視為 X + Base64 → 轉為 Base95；否則將內容視為 Base95 → 轉為 Base64（並加 X 前綴）。</div>
-            <div class="btns" style="margin-top:12px;">
-              <button id="btn-b95-convert">轉換</button>
-              <button id="btn-b95-clear" class="secondary">清空</button>
-            </div>
-          </div>
-          <div>
-            <label>結果</label>
-            <div id="b95-output" class="out" style="min-height:110px;"></div>
-<div class="btns" style="margin-top:8px;"><button id="btn-copy-b95" class="secondary">複製結果</button></div>
-          </div>
+    <!-- Base94 -->
+    
+
+<section id="tab-b64txt" class="hidden">
+  <div class="card">
+    <h2>文字/Base64 自動轉換</h2>
+    <div class="row">
+      <div>
+        <label>輸入</label>
+        <textarea id="b64txt-input" rows="4" placeholder="貼上文字或以 X 開頭的 Base64..."></textarea>
+        <div class="hint">只靠 <b>X</b> 前綴自動判別方向：以 <b>X</b> 開頭視為 <b>X+Base64 → 文字</b>；否則視為 <b>文字 → X+Base64</b>。會自動移除 Base64 輸入中的空白字元。</div>
+        <div class="btns" style="margin-top:12px;">
+          <button id="btn-b64txt-convert">轉換</button>
+          <button id="btn-b64txt-clear" class="secondary">清空</button>
         </div>
       </div>
-    </section>
+      <div>
+        <label>結果</label>
+        <div id="b64txt-output" class="out" style="min-height:110px;"></div>
+        <div class="btns" style="margin-top:8px;"><button id="btn-copy-b64txt" class="secondary">複製結果</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
   </div>
 
 <script>
@@ -142,7 +146,7 @@
 const tabButtons = [...document.querySelectorAll('.tab-btn')];
 const tabSections = {
   bip39: document.getElementById('tab-bip39'),
-  base95: document.getElementById('tab-base95'),
+  b64txt: document.getElementById('tab-b64txt'),
 };
 tabButtons.forEach(btn=>{
   btn.addEventListener('click', ()=>{
@@ -153,9 +157,9 @@ tabButtons.forEach(btn=>{
   });
 });
 
-// ===== mnemo core (based on your mnemo.html) =====
+// ===== BIP39 core =====
 const BASE16_ALPHABET = "0123456789abcdef";
-const BASE58_ALPHABET = "1234589ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"; // from 本工具
+const BASE58_ALPHABET = "1234589ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"; // custom Base58
 const WORDLIST = [
   "abandon",
   "ability",
@@ -2393,56 +2397,33 @@ document.getElementById("btn-decode").addEventListener("click", () => {
 document.getElementById("btn-clear-enc").addEventListener("click", ()=>{ document.getElementById("mnemonic").value=""; document.getElementById("encode-out").textContent=""; document.getElementById("encode-msg").textContent=""; });
 document.getElementById("btn-clear-dec").addEventListener("click", ()=>{ document.getElementById("encoded").value=""; document.getElementById("decode-out").textContent=""; document.getElementById("decode-msg").textContent=""; });
 
-// ===== Base64/Base95 converter (based on your conv95.html) =====
-const base95Chars = [...Array(95)].map((_, i) => String.fromCharCode(i + 32));
-const base95Map = Object.fromEntries(base95Chars.map((c, i) => [c, i]));
 
-function base64ToBase95(b64) {
-  const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-  let hex = [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
-  if (hex.length === 0) return "";
-  let num = BigInt('0x' + hex);
-  let result = '';
-  while (num > 0n) {
-    result = base95Chars[Number(num % 95n)] + result;
-    num /= 95n;
-  }
-  return result || base95Chars[0];
-}
 
-function base95ToBase64(b95) {
-  if (!b95) return " ";
-  let num = 0n;
-  for (const c of b95) {
-    const v = base95Map[c];
-    if (v === undefined) throw new Error("非 Base95 字元：" + c);
-    num = num * 95n + BigInt(v);
-  }
-  let hex = num.toString(16);
-  if (hex.length % 2) hex = '0' + hex;
-  const bytes = hex.match(/.2/g).map(h => String.fromCharCode(parseInt(h, 16))).join('');
-  return btoa(bytes);
-}
 
-document.getElementById("btn-b95-convert").addEventListener("click", () => {
-  const input = document.getElementById('b95-input').value.trim();
-  const out = document.getElementById('b95-output');
+// ===== 文字/Base64 converter =====
+document.getElementById("btn-b64txt-convert").addEventListener("click", () => {
+  const raw = document.getElementById('b64txt-input').value;
+  const out = document.getElementById('b64txt-output');
   out.textContent = "";
   try {
     let output = "";
-    if (input.startsWith('X')) {
-      output = base64ToBase95(input.slice(1));
+    const trimmed = raw.trim();
+    if (trimmed.startsWith('X')) {
+      // X+Base64 -> Text
+      const clean = trimmed.slice(1).replace(/\s+/g, '');
+      output = atob(clean);
     } else {
-      output = 'X' + base95ToBase64(input);
+      // Text -> X+Base64 (preserve whitespace)
+      output = 'X' + btoa(raw);
     }
     out.textContent = output;
   } catch (e) {
     out.innerHTML = '⚠️ 轉換失敗：' + e.message;
   }
 });
-document.getElementById("btn-b95-clear").addEventListener("click", () => {
-  document.getElementById('b95-input').value = "";
-  document.getElementById('b95-output').textContent = "";
+document.getElementById("btn-b64txt-clear").addEventListener("click", () => {
+  document.getElementById('b64txt-input').value = "";
+  document.getElementById('b64txt-output').textContent = "";
 });
 
 // ===== Copy helpers =====
@@ -2460,11 +2441,9 @@ function copyFrom(elId, btnId) {
     alert("複製失敗，可能被瀏覽器阻擋。");
   });
 }
-
 document.getElementById("btn-copy-enc")?.addEventListener("click", () => copyFrom("encode-out", "btn-copy-enc"));
 document.getElementById("btn-copy-dec")?.addEventListener("click", () => copyFrom("decode-out", "btn-copy-dec"));
-document.getElementById("btn-copy-b95")?.addEventListener("click", () => copyFrom("b95-output", "btn-copy-b95"));
-
+document.getElementById("btn-copy-b64txt")?.addEventListener("click", () => copyFrom("b64txt-output", "btn-copy-b64txt"));
 </script>
 </body>
 </html>
